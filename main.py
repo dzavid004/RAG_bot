@@ -28,8 +28,8 @@ dp = Dispatcher()
 async def start(message: Message) -> None:
     first_name = message.from_user.first_name
     await message.answer(
-        f"Привет, {first_name}! Я помощник салона красоты.\n"
-        f"Задавай вопросы по услугам, ценам и условиям оказания услуг."
+        f"Здравствуйте, {first_name}! Я помощник салона красоты Maris.\n"
+        f"Задавайте вопросы по услугам, ценам и условиям оказания услуг."
     )
 
 
