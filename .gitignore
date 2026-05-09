@@ -1,0 +1,5 @@
+# .gitignore — итоговый вариант
+venv/
+.env
+__pycache__/
+*.pyc
