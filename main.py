@@ -18,7 +18,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 
-MAX_INPUT_CHARS = 2000
+MAX_INPUT_CHARS = 2001
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
