@@ -28,10 +28,15 @@ dp = Dispatcher()
 async def start(message: Message) -> None:
     first_name = message.from_user.first_name
     await message.answer(
-        f"Здравствуйте, {first_name}! Я помощник салона красоты Maris.\n"
-        f"Задавайте вопросы по услугам, ценам и условиям оказания услуг."
-    )
-
+    f"Здравствуйте, {first_name}! 🌸\n\n"
+    f"Вас приветствует салон красоты Maris.\n\n"
+    f"Я помогу узнать:\n"
+    f"💇‍♀️ Цены на стрижки и укладки\n"
+    f"💅 Маникюр и педикюр\n"
+    f"✨ Косметологические процедуры\n"
+    f"🪮 Эпиляция и уход\n\n"
+    f"Какая услуга вас интересует?"
+)
 
 @dp.message(F.text)
 async def chat(message: Message) -> None:
