@@ -56,7 +56,6 @@ def get_index() -> VectorStoreIndex:
         )
     return _index
 
-# Инициализируем индекс при старте
 get_index()
 
 async def ask(question: str) -> str:
@@ -66,7 +65,6 @@ async def ask(question: str) -> str:
     """
     try:
         index = get_index()
-        # Включаем streaming=False (теперь ждем полный ответ)
         query_engine = index.as_query_engine(similarity_top_k=2, streaming=False)
 
         loop = asyncio.get_event_loop()
