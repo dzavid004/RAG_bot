@@ -22,7 +22,7 @@ DOCUMENTS_PATH = os.getenv("DOCUMENTS_PATH", "./documents")
 
 # Настройки для OpenRouter
 common_headers = {
-    "HTTP-Referer": "https://github.com/rahim-backend",
+    "HTTP-Referer": "https://github.com/dzavid004",
     "X-Title": "Indexing Script"
 }
 

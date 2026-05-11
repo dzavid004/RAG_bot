@@ -33,10 +33,7 @@ async def start(message: Message) -> None:
     await message.answer(
         f"Здравствуйте, {first_name}! 🌸\n\n"
         f"Вас приветствует салон красоты Maris.\n\n"
-        f"Я помогу узнать:\n"
-        f"💇‍♀️ Цены на стрижки и укладки\n"
-        f"💅 Маникюр и педикюр\n"
-        f"✨ Косметологические процедуры\n\n"
+        f"Я помогу узнать цены на наши услуги.\n\n"
         f"Какая услуга вас интересует?"
     )
 
@@ -50,35 +47,19 @@ async def chat(message: Message) -> None:
         )
         return
 
+    # 1. Отправляем сообщение-заглушку
     placeholder = await message.answer("секундочку...🔍")
 
     try:
-        streaming_response = await ask(user_message)
+        # 2. Ждем полного ответа от RAG
+        # ВАЖНО: убедись, что ask(user_message) возвращает строку (str)
+        response_text = await ask(user_message)
         
-        if not streaming_response:
-            await placeholder.edit_text("Извините, не удалось получить ответ.")
-            return
-
-        full_response = ""
-        last_sent_text = ""
-        chunk_size = 0
-
-        for token in streaming_response.response_gen:
-            full_response += token
-            chunk_size += 1
-
-            if chunk_size >= 20:
-                if full_response.strip() != last_sent_text:
-                    try:
-                        await placeholder.edit_text(full_response)
-                        last_sent_text = full_response
-                        chunk_size = 0
-                    except TelegramBadRequest:
-                        pass
-                    await asyncio.sleep(0.1)
-
-        if full_response.strip() != last_sent_text:
-            await placeholder.edit_text(full_response)
+        # 3. Редактируем заглушку финальным текстом
+        if response_text:
+            await placeholder.edit_text(str(response_text))
+        else:
+            await placeholder.edit_text("Извините, не удалось найти информацию.")
 
     except Exception as e:
         print(f"Ошибка в chat: {e}")
@@ -87,15 +68,16 @@ async def chat(message: Message) -> None:
         except:
             pass
 
+# Настройка вебхука через lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     webhook_full_url = f"{WEBHOOK_URL}{WEBHOOK_PATH}"
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_webhook(webhook_full_url)
-    print(f"Webhook установлен: {webhook_full_url}")
+    print(f"🚀 Webhook установлен: {webhook_full_url}")
     yield
     await bot.delete_webhook()
-    print("Webhook удалён.")
+    print("🛑 Webhook удалён.")
 
 app = FastAPI(lifespan=lifespan)
 
