@@ -119,9 +119,12 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(request: Request) -> JSONResponse:
-    data = await request.json()
-    update = Update.model_validate(data, context={"bot": bot})
-    await dp.feed_update(bot=bot, update=update)
+    try:
+        data = await request.json()
+        update = Update.model_validate(data, context={"bot": bot})
+        await dp.feed_update(bot=bot, update=update)
+    except Exception as e:
+        print(f"Webhook error: {e}")
     return JSONResponse({"ok": True})
 
 
