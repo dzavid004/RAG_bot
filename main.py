@@ -20,6 +20,14 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 MAX_INPUT_CHARS = 2001
 
+BUTTON_LABELS = {
+    "haircut": "Стрижки и укладки",
+    "manicure": "Маникюр и педикюр",
+    "cosmetology": "Косметология",
+    "makeup": "Макияж и брови",
+    "epilation": "Эпиляция",
+}
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -31,15 +39,15 @@ async def start(message: Message) -> None:
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="💇‍♀️ Стрижки и укладки", callback_data="Стрижки и укладки"),
-                InlineKeyboardButton(text="💅 Маникюр и педикюр", callback_data="Маникюр и педикюр"),
+                InlineKeyboardButton(text="💇‍♀️ Стрижки и укладки", callback_data="haircut"),
+                InlineKeyboardButton(text="💅 Маникюр и педикюр", callback_data="manicure"),
             ],
             [
-                InlineKeyboardButton(text="✨ Косметология", callback_data="Косметология"),
-                InlineKeyboardButton(text="💄 Макияж и брови", callback_data="Макияж и брови"),
+                InlineKeyboardButton(text="✨ Косметология", callback_data="cosmetology"),
+                InlineKeyboardButton(text="💄 Макияж и брови", callback_data="makeup"),
             ],
             [
-                InlineKeyboardButton(text="🪒 Эпиляция", callback_data="Эпиляция"),
+                InlineKeyboardButton(text="🪒 Эпиляция", callback_data="epilation"),
             ],
         ]
     )
@@ -58,7 +66,7 @@ async def start(message: Message) -> None:
 
 @dp.callback_query()
 async def handle_button(callback: CallbackQuery) -> None:
-    question = callback.data
+    question = BUTTON_LABELS.get(callback.data, callback.data)
     await callback.answer()
 
     placeholder = await callback.message.answer("секундочку... 🔍")
