@@ -9,6 +9,7 @@ import uvicorn
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, Update
 from aiogram.filters import CommandStart
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.exceptions import TelegramBadRequest
 from dotenv import load_dotenv
 
@@ -16,19 +17,27 @@ from rag import ask
 
 load_dotenv(override=True)
 
-# Конфиги
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 MAX_INPUT_CHARS = 2001
 
-# Инициализация бота и диспетчера
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 @dp.message(CommandStart())
 async def start(message: Message) -> None:
     first_name = message.from_user.first_name
+
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="💇‍♀️ Стрижки и укладки"), KeyboardButton(text="💅 Маникюр и педикюр")],
+            [KeyboardButton(text="✨ Косметология"), KeyboardButton(text="💄 Макияж и брови")],
+            [KeyboardButton(text="🪒 Эпиляция")],
+        ],
+        resize_keyboard=True,
+    )
+
     await message.answer(
         f"Здравствуйте, {first_name}! 🌸\n\n"
         f"Вас приветствует салон красоты Maris.\n\n"
@@ -36,8 +45,9 @@ async def start(message: Message) -> None:
         f"💇‍♀️ Цены на стрижки и укладки\n"
         f"💅 Маникюр и педикюр\n"
         f"✨ Косметологические процедуры\n\n"
-        f"Какая услуга вас интересует?"
-)
+        f"Какая услуга вас интересует?",
+        reply_markup=keyboard,
+    )
 
 @dp.message(F.text)
 async def chat(message: Message) -> None:
@@ -49,12 +59,9 @@ async def chat(message: Message) -> None:
         )
         return
 
-    # 1. Отправляем сообщение-заглушку
     placeholder = await message.answer("секундочку...🔍")
 
     try:
-        # 2. Ждем полного ответа от RAG
-        # ВАЖНО: убедись, что ask(user_message) возвращает строку (str)
         response_text = await ask(user_message)
         
         # 3. Редактируем заглушку финальным текстом
@@ -70,7 +77,6 @@ async def chat(message: Message) -> None:
         except:
             pass
 
-# Настройка вебхука через lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     webhook_full_url = f"{WEBHOOK_URL}{WEBHOOK_PATH}"
