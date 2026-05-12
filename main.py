@@ -103,12 +103,14 @@ async def chat(message: Message) -> None:
 async def lifespan(app: FastAPI):
     webhook_full_url = f"{WEBHOOK_URL}{WEBHOOK_PATH}"
     await bot.delete_webhook(drop_pending_updates=True)
-    await bot.set_webhook(webhook_full_url)
+    await bot.set_webhook(
+        webhook_full_url,
+        allowed_updates=["message", "callback_query"]  # ← вот это
+    )
     print(f"🚀 Webhook установлен: {webhook_full_url}")
     yield
     await bot.delete_webhook()
     print("🛑 Webhook удалён.")
-
 
 app = FastAPI(lifespan=lifespan)
 
