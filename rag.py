@@ -5,16 +5,16 @@ import chromadb
 from dotenv import load_dotenv
 
 from llama_index.core import VectorStoreIndex, StorageContext, Settings
-from llama_index.llms.openrouter import OpenRouter 
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openrouter import OpenRouter
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 load_dotenv(override=True)
 
-# Конфиги
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not OPENROUTER_API_KEY:
-    raise ValueError("OPENROUTER_API_KEY is not set. Please add it to your environment variables.")
+    raise ValueError("OPENROUTER_API_KEY is not set.")
 
 LLM_MODEL = os.getenv("LLM_MODEL", "google/gemini-3-flash-preview")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
@@ -22,18 +22,16 @@ SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT")
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
 CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "auto_docs")
 
-# Настройки LLM
 Settings.llm = OpenRouter(
     model=LLM_MODEL,
     api_key=OPENROUTER_API_KEY,
     system_prompt=SYSTEM_PROMPT,
     default_headers={
-        "HTTP-Referer": "https://github.com/my-tg-bot", 
-        "X-Title": "Maris Salon Bot"
+        "HTTP-Referer": "https://github.com/my-tg-bot",
+        "X-Title": "Maris Salon Bot",
     }
 )
 
-# Настройки Эмбеддингов
 Settings.embed_model = OpenAIEmbedding(
     model=EMBEDDING_MODEL,
     api_key=OPENROUTER_API_KEY,
@@ -42,6 +40,7 @@ Settings.embed_model = OpenAIEmbedding(
 
 executor = ThreadPoolExecutor()
 _index = None
+
 
 def get_index() -> VectorStoreIndex:
     global _index
@@ -56,25 +55,30 @@ def get_index() -> VectorStoreIndex:
         )
     return _index
 
+
 get_index()
 
-async def ask(question: str) -> str:
-    """
-    Возвращает готовый текстовый ответ (строку).
-    Стриминг отключен для упрощения работы с Telegram.
-    """
+
+async def ask(question: str, history: list[dict] = []) -> str:
     try:
         index = get_index()
-        query_engine = index.as_query_engine(similarity_top_k=2, streaming=False)
+
+        chat_history = [
+            ChatMessage(role=msg["role"], content=msg["content"])
+            for msg in history
+        ]
+
+        chat_engine = index.as_chat_engine(
+            chat_history=chat_history,
+            similarity_top_k=2,
+        )
 
         loop = asyncio.get_event_loop()
-        # Запускаем блокирующую операцию в потоке
         response = await loop.run_in_executor(
             executor,
-            lambda: query_engine.query(question)
+            lambda: chat_engine.chat(question)
         )
-        
-        # Возвращаем результат как строку
+
         return str(response)
     except Exception as e:
         print(f"Ошибка в RAG: {e}")

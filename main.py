@@ -21,9 +21,25 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 MAX_INPUT_CHARS = 2001
+MAX_HISTORY = 3
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+user_histories: dict[int, list[dict]] = {}
+
+
+def get_history(user_id: int) -> list[dict]:
+    if user_id not in user_histories:
+        user_histories[user_id] = []
+    return user_histories[user_id]
+
+
+def add_to_history(user_id: int, role: str, content: str) -> None:
+    history = get_history(user_id)
+    history.append({"role": role, "content": content})
+    if len(history) > MAX_HISTORY:
+        user_histories[user_id] = history[-MAX_HISTORY:]
 
 
 def get_services_keyboard() -> InlineKeyboardMarkup:
@@ -42,14 +58,16 @@ def get_services_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-async def process_query(user_message: str, reply_target: Message) -> None:
-    """Общая логика обработки запроса — используется и для текста, и для кнопок."""
+async def process_query(user_message: str, reply_target: Message, user_id: int) -> None:
     placeholder = await reply_target.answer("секундочку...🔍")
 
     try:
-        response_text = await ask(user_message)
+        history = get_history(user_id)
+        response_text = await ask(user_message, history)
 
         if response_text:
+            add_to_history(user_id, "user", user_message)
+            add_to_history(user_id, "assistant", response_text)
             await placeholder.edit_text(str(response_text))
         else:
             await placeholder.edit_text("Извините, не удалось найти информацию.")
@@ -65,6 +83,7 @@ async def process_query(user_message: str, reply_target: Message) -> None:
 @dp.message(CommandStart())
 async def start(message: Message) -> None:
     first_name = message.from_user.first_name
+    user_histories[message.from_user.id] = []
 
     await message.answer(
         f"Здравствуйте, {first_name}! 🌸\n\n"
@@ -80,14 +99,12 @@ async def start(message: Message) -> None:
 
 @dp.callback_query(F.data)
 async def handle_button(callback: CallbackQuery) -> None:
-    """Обработчик нажатий на inline-кнопки."""
-    await callback.answer()  # убирает "часики" на кнопке
-    await process_query(callback.data, callback.message)
+    await callback.answer()
+    await process_query(callback.data, callback.message, callback.from_user.id)
 
 
 @dp.message(F.text)
 async def chat(message: Message) -> None:
-    """Обработчик обычных текстовых сообщений."""
     user_message = message.text
 
     if len(user_message) > MAX_INPUT_CHARS:
@@ -96,7 +113,7 @@ async def chat(message: Message) -> None:
         )
         return
 
-    await process_query(user_message, message)
+    await process_query(user_message, message, message.from_user.id)
 
 
 @asynccontextmanager
@@ -105,12 +122,13 @@ async def lifespan(app: FastAPI):
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_webhook(
         webhook_full_url,
-        allowed_updates=["message", "callback_query"]  # ← вот это
+        allowed_updates=["message", "callback_query"]
     )
     print(f"🚀 Webhook установлен: {webhook_full_url}")
     yield
     await bot.delete_webhook()
     print("🛑 Webhook удалён.")
+
 
 app = FastAPI(lifespan=lifespan)
 
