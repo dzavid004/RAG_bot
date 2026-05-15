@@ -9,7 +9,7 @@ import uvicorn
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, Update, CallbackQuery
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.exceptions import TelegramBadRequest
 from dotenv import load_dotenv
 
@@ -26,24 +26,27 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 
-def get_services_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="💇‍♀️ Стрижки и укладки", callback_data="Стрижки и укладки"),
-            InlineKeyboardButton(text="💅 Маникюр и педикюр", callback_data="Маникюр и педикюр"),
+def get_services_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text="💇‍♀️ Стрижки и укладки"),
+                KeyboardButton(text="💅 Маникюр и педикюр"),
+            ],
+            [
+                KeyboardButton(text="✨ Косметология"),
+                KeyboardButton(text="💄 Макияж и брови"),
+            ],
+            [
+                KeyboardButton(text="🪒 Эпиляция"),
+            ],
         ],
-        [
-            InlineKeyboardButton(text="✨ Косметология", callback_data="Косметология"),
-            InlineKeyboardButton(text="💄 Макияж и брови", callback_data="Макияж и брови"),
-        ],
-        [
-            InlineKeyboardButton(text="🪒 Эпиляция", callback_data="Эпиляция"),
-        ],
-    ])
+        resize_keyboard=True,
+        input_field_placeholder="Или напишите свой вопрос...",
+    )
 
 
 async def process_query(user_message: str, reply_target: Message) -> None:
-    """Общая логика обработки запроса — используется и для текста, и для кнопок."""
     placeholder = await reply_target.answer("секундочку...🔍")
 
     try:
@@ -78,16 +81,8 @@ async def start(message: Message) -> None:
     )
 
 
-@dp.callback_query(F.data)
-async def handle_button(callback: CallbackQuery) -> None:
-    """Обработчик нажатий на inline-кнопки."""
-    await callback.answer()  # убирает "часики" на кнопке
-    await process_query(callback.data, callback.message)
-
-
 @dp.message(F.text)
 async def chat(message: Message) -> None:
-    """Обработчик обычных текстовых сообщений."""
     user_message = message.text
 
     if len(user_message) > MAX_INPUT_CHARS:
@@ -105,7 +100,7 @@ async def lifespan(app: FastAPI):
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_webhook(
         webhook_full_url,
-        allowed_updates=["message", "callback_query"]  # ← вот это
+        allowed_updates=["message", "callback_query"]
     )
     print(f"🚀 Webhook установлен: {webhook_full_url}")
     yield
